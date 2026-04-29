@@ -1,25 +1,21 @@
 {
   "expo": {
-    "name": "magister1",
-    "slug": "magister1",
+    "name": "SHodiyevaM",
+    "slug": "SHodiyevaM",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "magister1",
+    "icon": "./assets/images/oxu.png",
+    "scheme": "SHodiyevaM",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      },
+      "icon": "./assets/images/oxu.png",
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.rajabov_azizbek_2001.SHodiyevaM"
     },
     "web": {
       "output": "static",
@@ -43,6 +39,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "aaa2577e-43ab-4dca-b371-7063c154275d"
+      }
+    },
+    "owner": "rajabov_azizbek_2001"
   }
 }
