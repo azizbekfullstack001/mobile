@@ -1,4 +1,5 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Linking from 'expo-linking';
@@ -117,7 +118,7 @@ interface CertificateSettings {
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 
-const P = {
+const DARK_P = {
   bg: '#060B14',
   surface: '#0D1421',
   card: '#111827',
@@ -137,6 +138,27 @@ const P = {
   white: '#FFFFFF',
 };
 
+const LIGHT_P = {
+  bg: '#F4F7FB',
+  surface: '#FFFFFF',
+  card: '#FFFFFF',
+  card2: '#EEF3FA',
+  border: '#DDE6F2',
+  border2: '#C8D5E5',
+  text: '#0F172A',
+  sub: '#64748B',
+  muted: '#94A3B8',
+  indigo: '#4F46E5',
+  cyan: '#0891B2',
+  emerald: '#059669',
+  amber: '#D97706',
+  rose: '#E11D48',
+  purple: '#7C3AED',
+  sky: '#0284C7',
+  white: '#FFFFFF',
+};
+
+let P = DARK_P;
 // Firestore document limiti 1MB atrofida. Base64 hajmni kattalashtiradi,
 // shuning uchun fayl base64 bo‘laklarga ajratilib saqlanadi.
 const MAX_FIRESTORE_FILE_BYTES = 1024 * 1024;
@@ -534,7 +556,7 @@ const QuizBuilder = ({
   );
 };
 
-const qb = StyleSheet.create({
+const createQbStyles = () => StyleSheet.create({
   card: {
     backgroundColor: P.surface,
     borderRadius: 16,
@@ -601,6 +623,7 @@ const qb = StyleSheet.create({
     borderStyle: 'dashed',
   },
 });
+let qb = createQbStyles();
 
 // ─── LessonForm ───────────────────────────────────────────────────────────────
 
@@ -675,7 +698,7 @@ const FilePicker = ({
   );
 };
 
-const fp = StyleSheet.create({
+const createFpStyles = () => StyleSheet.create({
   pickBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -745,6 +768,7 @@ const fp = StyleSheet.create({
     alignItems: 'center',
   },
 });
+let fp = createFpStyles();
 
 
 const StableInputField = React.memo((props: any) => (
@@ -1126,7 +1150,7 @@ const LessonForm = ({
   );
 };
 
-const lf = StyleSheet.create({
+const createLfStyles = () => StyleSheet.create({
   uploadBox: {
     backgroundColor: P.indigo + '15',
     borderWidth: 1,
@@ -1197,6 +1221,7 @@ const lf = StyleSheet.create({
     alignItems: 'center',
   },
 });
+let lf = createLfStyles();
 
 // ─── CourseForm ───────────────────────────────────────────────────────────────
 
@@ -1318,7 +1343,7 @@ const CourseForm = ({
   );
 };
 
-const mf = StyleSheet.create({
+const createMfStyles = () => StyleSheet.create({
   hdr: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1390,6 +1415,16 @@ const mf = StyleSheet.create({
     borderWidth: 1,
   },
 });
+let mf = createMfStyles();
+
+
+const rebuildThemeStyles = () => {
+  qb = createQbStyles();
+  fp = createFpStyles();
+  lf = createLfStyles();
+  mf = createMfStyles();
+  a = createAStyles();
+};
 
 // ─── Nav ──────────────────────────────────────────────────────────────────────
 
@@ -1408,6 +1443,10 @@ const NAV: { key: Screen; icon: string; label: string }[] = [
 export default function AdminPanel() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [isDarkMode, setIsDarkMode] = useState(true);
+
+  P = isDarkMode ? DARK_P : LIGHT_P;
+  rebuildThemeStyles();
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [allUsers, setAllUsers] = useState<AppUser[]>([]);
@@ -1435,6 +1474,24 @@ export default function AdminPanel() {
   const [certSaving, setCertSaving] = useState(false);
 
   const dq = useDebounce(search, 250);
+
+  useEffect(() => {
+    AsyncStorage.getItem('adminThemeMode')
+      .then(mode => {
+        if (mode === 'light') setIsDarkMode(false);
+        if (mode === 'dark') setIsDarkMode(true);
+      })
+      .catch(() => {});
+  }, []);
+
+  const toggleThemeMode = async () => {
+    const next = !isDarkMode;
+    setIsDarkMode(next);
+    try {
+      await AsyncStorage.setItem('adminThemeMode', next ? 'dark' : 'light');
+    } catch {}
+  };
+
 
   useEffect(() => {
     const u1 = onSnapshot(
@@ -2616,6 +2673,18 @@ export default function AdminPanel() {
 
         <Divider />
 
+        <TouchableOpacity style={a.settingsRow} onPress={toggleThemeMode}>
+          <View style={[a.settingsIcon, { backgroundColor: (isDarkMode ? P.amber : P.indigo) + '18' }]}>
+            <Feather name={isDarkMode ? 'sun' : 'moon'} size={16} color={isDarkMode ? P.amber : P.indigo} />
+          </View>
+          <Text style={a.settingsRowTxt}>{isDarkMode ? 'Kunduzgi rejimga o‘tish' : 'Tungi rejimga o‘tish'}</Text>
+          <Text style={{ color: isDarkMode ? P.amber : P.indigo, fontWeight: '800', fontSize: 12 }}>
+            {isDarkMode ? 'TUNGI' : 'KUNDUZGI'}
+          </Text>
+        </TouchableOpacity>
+
+        <Divider />
+
         <TouchableOpacity style={a.settingsRow} onPress={handleLogout}>
           <View style={[a.settingsIcon, { backgroundColor: P.rose + '18' }]}>
             <Feather name="log-out" size={16} color={P.rose} />
@@ -2628,47 +2697,88 @@ export default function AdminPanel() {
       <Text style={[a.sectionLbl, { marginTop: 20 }]}>SERTIFIKAT SOZLAMALARI</Text>
 
       <View style={a.certificatePreviewCard}>
-        <View style={a.certPreviewLeft}>
-          <Text style={a.certMiniBrand}>{certificateSettings.platformName || 'Shodiyev M'}</Text>
-          <Text style={a.certMiniTitle}>{certificateSettings.mainTitle || 'Sertifikat'}</Text>
-          <Text style={a.certMiniText}>{certificateSettings.introText || 'Ushbu sertifikat shuni tasdiqlaydiki'}</Text>
-          <Text style={a.certMiniName}>Ism Familiya</Text>
-          <Text style={a.certMiniCourse}>“Kurs nomi”</Text>
-          <Text style={a.certMiniText}>{certificateSettings.completionText || 'kursini muvaffaqiyatli tugatdi'}</Text>
-          <View style={a.certMiniSignature}>
-            <Text style={a.certMiniSign}>{certificateSettings.signatureName || 'M. Shodiyeva'}</Text>
-            <View style={a.certMiniLine} />
-            <Text style={a.certMiniDirector}>{certificateSettings.directorName || 'Shodiyeva Muborak'}</Text>
+        <View style={a.certDecorCircleOne} />
+        <View style={a.certDecorCircleTwo} />
+
+        <View style={a.certPreviewHeader}>
+          <View style={a.certBrandMark}>
+            <Feather name="award" size={20} color={P.white} />
+          </View>
+
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={a.certMiniBrand} numberOfLines={1}>
+              {certificateSettings.platformName || 'Shodiyev M'}
+            </Text>
+            <Text style={a.certRibbonText} numberOfLines={1}>
+              {certificateSettings.certificateType || 'KURS SERTIFIKATI'}
+            </Text>
+          </View>
+
+          <View style={a.certSeal}>
+            <Text style={a.certSealText} numberOfLines={2}>
+              {certificateSettings.sealText || 'SHODIYEV M'}
+            </Text>
           </View>
         </View>
 
-        <View style={a.certPreviewRibbon}>
-          <Text style={a.certRibbonText}>{certificateSettings.certificateType || 'KURS SERTIFIKATI'}</Text>
-          <View style={a.certSeal}>
-            <Text style={a.certSealText}>{certificateSettings.sealText || 'SHODIYEV M'}</Text>
+        <View style={a.certPreviewBody}>
+          <Text style={a.certMiniTitle} numberOfLines={1}>
+            {certificateSettings.mainTitle || 'Sertifikat'}
+          </Text>
+
+          <Text style={a.certMiniText} numberOfLines={2}>
+            {certificateSettings.introText || 'Ushbu sertifikat shuni tasdiqlaydiki'}
+          </Text>
+
+          <View style={a.certNameLine}>
+            <Text style={a.certMiniName} numberOfLines={1}>Ism Familiya</Text>
+          </View>
+
+          <Text style={a.certMiniCourse} numberOfLines={2}>
+            “Kurs nomi” {certificateSettings.completionText || 'kursini muvaffaqiyatli tugatdi'}
+          </Text>
+        </View>
+
+        <View style={a.certPreviewFooter}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={a.certMiniSign} numberOfLines={1}>
+              {certificateSettings.signatureName || 'M. Shodiyeva'}
+            </Text>
+            <View style={a.certMiniLine} />
+            <Text style={a.certMiniDirector} numberOfLines={2}>
+              {certificateSettings.directorName || 'Shodiyeva Muborak'} • {certificateSettings.organizationName || "Shodiyev M ta'lim platformasi direktori"}
+            </Text>
           </View>
         </View>
       </View>
 
       <View style={a.settingsCard}>
         <View style={a.formBlock}>
-          <Text style={a.formLabel}>Platforma nomi</Text>
-          <TextInput
-            style={a.settingsInput}
-            value={certificateSettings.platformName}
-            onChangeText={v => updateCertificateSetting('platformName', v)}
-            placeholder="Shodiyev M"
-            placeholderTextColor={P.muted}
-          />
+          <Text style={a.formGroupTitle}>Asosiy ko‘rinish</Text>
 
-          <Text style={a.formLabel}>Sertifikat turi</Text>
-          <TextInput
-            style={a.settingsInput}
-            value={certificateSettings.certificateType}
-            onChangeText={v => updateCertificateSetting('certificateType', v)}
-            placeholder="KURS SERTIFIKATI"
-            placeholderTextColor={P.muted}
-          />
+          <View style={a.formTwoCol}>
+            <View style={a.formCol}>
+              <Text style={a.formLabel}>Platforma nomi</Text>
+              <TextInput
+                style={a.settingsInput}
+                value={certificateSettings.platformName}
+                onChangeText={v => updateCertificateSetting('platformName', v)}
+                placeholder="Shodiyev M"
+                placeholderTextColor={P.muted}
+              />
+            </View>
+
+            <View style={a.formCol}>
+              <Text style={a.formLabel}>Sertifikat turi</Text>
+              <TextInput
+                style={a.settingsInput}
+                value={certificateSettings.certificateType}
+                onChangeText={v => updateCertificateSetting('certificateType', v)}
+                placeholder="KURS SERTIFIKATI"
+                placeholderTextColor={P.muted}
+              />
+            </View>
+          </View>
 
           <Text style={a.formLabel}>Asosiy sarlavha</Text>
           <TextInput
@@ -2679,49 +2789,62 @@ export default function AdminPanel() {
             placeholderTextColor={P.muted}
           />
 
+          <Text style={a.formGroupTitle}>Matnlar</Text>
+
           <Text style={a.formLabel}>Kirish matni</Text>
           <TextInput
-            style={a.settingsInput}
+            style={[a.settingsInput, a.settingsTextArea]}
             value={certificateSettings.introText}
             onChangeText={v => updateCertificateSetting('introText', v)}
             placeholder="Ushbu sertifikat shuni tasdiqlaydiki"
             placeholderTextColor={P.muted}
+            multiline
           />
 
           <Text style={a.formLabel}>Kurs tugatish matni</Text>
           <TextInput
-            style={a.settingsInput}
+            style={[a.settingsInput, a.settingsTextArea]}
             value={certificateSettings.completionText}
             onChangeText={v => updateCertificateSetting('completionText', v)}
             placeholder="kursini muvaffaqiyatli tugatdi"
             placeholderTextColor={P.muted}
+            multiline
           />
 
-          <Text style={a.formLabel}>Direktor ism familiyasi</Text>
-          <TextInput
-            style={a.settingsInput}
-            value={certificateSettings.directorName}
-            onChangeText={v => updateCertificateSetting('directorName', v)}
-            placeholder="Shodiyeva Muborak"
-            placeholderTextColor={P.muted}
-          />
+          <Text style={a.formGroupTitle}>Imzo va muhr</Text>
 
-          <Text style={a.formLabel}>Imzo yozuvi</Text>
-          <TextInput
-            style={a.settingsInput}
-            value={certificateSettings.signatureName}
-            onChangeText={v => updateCertificateSetting('signatureName', v)}
-            placeholder="M. Shodiyeva"
-            placeholderTextColor={P.muted}
-          />
+          <View style={a.formTwoCol}>
+            <View style={a.formCol}>
+              <Text style={a.formLabel}>Rahbar</Text>
+              <TextInput
+                style={a.settingsInput}
+                value={certificateSettings.directorName}
+                onChangeText={v => updateCertificateSetting('directorName', v)}
+                placeholder="Shodiyeva Muborak"
+                placeholderTextColor={P.muted}
+              />
+            </View>
+
+            <View style={a.formCol}>
+              <Text style={a.formLabel}>Imzo yozuvi</Text>
+              <TextInput
+                style={a.settingsInput}
+                value={certificateSettings.signatureName}
+                onChangeText={v => updateCertificateSetting('signatureName', v)}
+                placeholder="M. Shodiyeva"
+                placeholderTextColor={P.muted}
+              />
+            </View>
+          </View>
 
           <Text style={a.formLabel}>Lavozim / tashkilot yozuvi</Text>
           <TextInput
-            style={a.settingsInput}
+            style={[a.settingsInput, a.settingsTextArea]}
             value={certificateSettings.organizationName}
             onChangeText={v => updateCertificateSetting('organizationName', v)}
             placeholder="Shodiyev M ta'lim platformasi direktori"
             placeholderTextColor={P.muted}
+            multiline
           />
 
           <Text style={a.formLabel}>Muhr ichidagi yozuv</Text>
@@ -2787,7 +2910,7 @@ export default function AdminPanel() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={a.root}>
-      <StatusBar barStyle="light-content" backgroundColor={P.bg} translucent={false} />
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={P.bg} translucent={false} />
 
       <View style={a.topBar}>
         {selectedCourse && screen === 'courses' ? (
@@ -2810,9 +2933,15 @@ export default function AdminPanel() {
           </View>
         )}
 
-        <TouchableOpacity style={a.menuBtnTop} onPress={() => setSidebarOpen(true)}>
-          <Feather name="menu" size={20} color={P.text} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <TouchableOpacity style={a.menuBtnTop} onPress={toggleThemeMode}>
+            <Feather name={isDarkMode ? 'sun' : 'moon'} size={19} color={isDarkMode ? P.amber : P.indigo} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={a.menuBtnTop} onPress={() => setSidebarOpen(true)}>
+            <Feather name="menu" size={20} color={P.text} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={{ flex: 1 }}>
@@ -3030,7 +3159,7 @@ export default function AdminPanel() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const a = StyleSheet.create({
+const createAStyles = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: P.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
@@ -3383,6 +3512,224 @@ const a = StyleSheet.create({
     fontSize: 15,
   },
 
+  formBlock: {
+    padding: 14,
+  },
+  formGroupTitle: {
+    color: P.text,
+    fontSize: 13,
+    fontWeight: '900',
+    marginTop: 6,
+    marginBottom: 10,
+  },
+  formTwoCol: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  formCol: {
+    flex: 1,
+    minWidth: 135,
+  },
+  formLabel: {
+    color: P.sub,
+    fontSize: 11,
+    fontWeight: '800',
+    marginBottom: 6,
+    marginTop: 8,
+  },
+  settingsInput: {
+    backgroundColor: P.surface,
+    borderWidth: 1,
+    borderColor: P.border2,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: P.text,
+    fontSize: 13,
+    marginBottom: 6,
+    minHeight: 44,
+  },
+  settingsTextArea: {
+    minHeight: 72,
+    textAlignVertical: 'top',
+    lineHeight: 18,
+  },
+  saveCertificateBtn: {
+    marginTop: 16,
+    backgroundColor: P.indigo,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  saveCertificateTxt: {
+    color: P.white,
+    fontWeight: '900',
+    fontSize: 12,
+    flexShrink: 1,
+    textAlign: 'center',
+  },
+  resetCertificateBtn: {
+    marginTop: 10,
+    backgroundColor: P.surface,
+    borderWidth: 1,
+    borderColor: P.border2,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  resetCertificateTxt: {
+    color: P.sub,
+    fontWeight: '800',
+    fontSize: 12,
+    flexShrink: 1,
+    textAlign: 'center',
+  },
+  certificatePreviewCard: {
+    backgroundColor: P.card,
+    borderRadius: 22,
+    marginBottom: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: P.border,
+    padding: 16,
+    position: 'relative',
+  },
+  certDecorCircleOne: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: P.indigo + '18',
+    right: -38,
+    top: -42,
+  },
+  certDecorCircleTwo: {
+    position: 'absolute',
+    width: 95,
+    height: 95,
+    borderRadius: 48,
+    backgroundColor: P.amber + '16',
+    left: -34,
+    bottom: -40,
+  },
+  certPreviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+    zIndex: 2,
+  },
+  certBrandMark: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: P.indigo,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  certMiniBrand: {
+    color: P.text,
+    fontWeight: '900',
+    fontSize: 15,
+  },
+  certRibbonText: {
+    color: P.sub,
+    fontWeight: '800',
+    fontSize: 11,
+    letterSpacing: 0.5,
+    marginTop: 2,
+  },
+  certPreviewBody: {
+    zIndex: 2,
+    backgroundColor: P.surface,
+    borderWidth: 1,
+    borderColor: P.border,
+    borderRadius: 18,
+    padding: 14,
+  },
+  certMiniTitle: {
+    color: P.indigo,
+    fontSize: 30,
+    lineHeight: 36,
+    fontWeight: '900',
+    marginBottom: 8,
+  },
+  certMiniText: {
+    color: P.sub,
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 10,
+  },
+  certNameLine: {
+    borderBottomWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: P.border2,
+    paddingBottom: 6,
+    marginBottom: 8,
+  },
+  certMiniName: {
+    color: P.text,
+    fontWeight: '900',
+    fontSize: 17,
+  },
+  certMiniCourse: {
+    color: P.sub,
+    fontWeight: '700',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  certPreviewFooter: {
+    zIndex: 2,
+    marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  certMiniSign: {
+    color: P.text,
+    fontSize: 18,
+    fontWeight: '900',
+    fontStyle: 'italic',
+  },
+  certMiniLine: {
+    height: 1.5,
+    backgroundColor: P.border2,
+    marginTop: 3,
+    marginBottom: 5,
+    width: '72%',
+  },
+  certMiniDirector: {
+    color: P.sub,
+    fontSize: 10,
+    lineHeight: 14,
+  },
+  certSeal: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    borderWidth: 4,
+    borderColor: P.amber,
+    backgroundColor: P.amber + '18',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 4,
+  },
+  certSealText: {
+    color: P.amber,
+    fontWeight: '900',
+    fontSize: 7,
+    textAlign: 'center',
+  },
+
   iconBtn: {
     width: 32,
     height: 32,
@@ -3464,3 +3811,4 @@ const a = StyleSheet.create({
     marginBottom: 2,
   },
 });
+let a = createAStyles();
