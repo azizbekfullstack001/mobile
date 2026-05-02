@@ -30,7 +30,6 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -40,6 +39,7 @@ import {
   View
 } from 'react-native';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import { auth, db } from './firebaseConfig';
@@ -494,6 +494,7 @@ const QuizModal = ({
 // ─── Asosiy Home komponenti ──────────────────────────────────────────────────
 
 export default function Home() {
+  const insets = useSafeAreaInsets();
   const router  = useRouter();
   const user    = auth.currentUser;
 
@@ -1696,7 +1697,7 @@ export default function Home() {
         {/* Admin bilan bog'lanish */}
         <TouchableOpacity
           style={s.actionRow}
-          onPress={() => Linking.openURL('tel:+998901234567')}
+          onPress={() => Linking.openURL('tel:+998884607747')}
         >
           <View style={[s.actionIcon, { backgroundColor: T.grnBg }]}>
             <Feather name="phone-call" size={15} color={T.grn} />
@@ -2275,7 +2276,7 @@ export default function Home() {
 
           {/* Tab content */}
           <ScrollView
-            contentContainerStyle={{ padding: 14, paddingBottom: 100 }}
+            contentContainerStyle={{ padding: 14, paddingBottom: 100 + Math.max(insets.bottom, 12) }}
             showsVerticalScrollIndicator={false}
           >
             {activeTab === 'home'      && renderHome()}
@@ -2582,7 +2583,7 @@ const s = StyleSheet.create({
   riName:        { fontSize: 12, fontWeight: '600' },
   riMeta:        { fontSize: 10, marginTop: 2 },
 
-  nav:  { flexDirection: 'row', justifyContent: 'space-around', paddingTop: 8, paddingBottom: 20, borderTopWidth: 0.5 },
+  nav:  { flexDirection: 'row', justifyContent: 'space-around', paddingTop: 8, borderTopWidth: 0.5 },
   ni:   { alignItems: 'center', paddingVertical: 4, paddingHorizontal: 12 },
   nlbl: { fontSize: 10, marginTop: 3 },
   ndot: { width: 4, height: 4, borderRadius: 2, marginTop: 2 },

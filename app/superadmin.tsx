@@ -17,7 +17,6 @@ import {
   Alert,
   BackHandler,
   FlatList,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
@@ -26,6 +25,7 @@ import {
   View,
 } from 'react-native';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, db } from './firebaseConfig';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -91,6 +91,7 @@ const mapUserDoc = (d: any): AppUser => {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function SuperAdmin() {
+  const insets = useSafeAreaInsets();
   const [users, setUsers] = useState<AppUser[]>([]);
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -381,11 +382,11 @@ export default function SuperAdmin() {
   // ─── UI ───────────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={s.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
+    <SafeAreaView edges={['top', 'left', 'right']} style={s.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0F172A" translucent={false} />
 
       {/* Header */}
-      <View style={s.header}>
+      <View style={[s.header, { paddingTop: Math.max(insets.top > 0 ? 8 : 14, 8) }]}>
         <View style={s.headerTop}>
           {/* Oldingi kodda bu tugma router.replace('/home') qilgani uchun student profilga o'tib ketardi.
               Endi navigatsiya yo'q: superadmin sahifasida qoladi. */}
@@ -463,7 +464,7 @@ export default function SuperAdmin() {
           data={displayedUsers}
           keyExtractor={item => item.id}
           renderItem={renderUserCard}
-          contentContainerStyle={{ padding: 18, paddingBottom: 60 }}
+          contentContainerStyle={{ padding: 18, paddingBottom: 92 + Math.max(insets.bottom, 12) }}
           showsVerticalScrollIndicator={false}
           onEndReached={fetchMoreUsers}
           onEndReachedThreshold={0.4}
@@ -486,7 +487,7 @@ export default function SuperAdmin() {
         />
       )}
 
-      <View style={s.bottomLogoutWrap}>
+      <View style={[s.bottomLogoutWrap, { paddingBottom: Math.max(insets.bottom + 10, 18) }]}>
         <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
           <Feather name="log-out" size={17} color="#fff" />
           <Text style={s.logoutBtnText}>Chiqish</Text>
@@ -501,7 +502,7 @@ export default function SuperAdmin() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0F172A' },
 
-  header: { backgroundColor: '#1E293B', paddingTop: 12, paddingBottom: 20, paddingHorizontal: 18, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
+  header: { backgroundColor: '#1E293B', paddingBottom: 20, paddingHorizontal: 18, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
   headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 18, gap: 12 },
   backButton: { width: 40, height: 40, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 13, justifyContent: 'center', alignItems: 'center' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -542,7 +543,7 @@ const s = StyleSheet.create({
   superBadge: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#6366F1', padding: 10, borderRadius: 12 },
   superBadgeTxt: { color: '#fff', fontWeight: '800', fontSize: 11 },
 
-  bottomLogoutWrap: { paddingHorizontal: 18, paddingBottom: 14, paddingTop: 8, backgroundColor: '#0F172A' },
+  bottomLogoutWrap: { paddingHorizontal: 18, paddingTop: 8, backgroundColor: '#0F172A' },
   logoutBtn: { height: 48, borderRadius: 16, backgroundColor: '#EF4444', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
   logoutBtnText: { color: '#fff', fontSize: 14, fontWeight: '900' },
 

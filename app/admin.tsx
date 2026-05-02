@@ -24,7 +24,6 @@ import {
   Dimensions,
   FlatList,
   Modal,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -34,6 +33,7 @@ import {
   View,
 } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, SlideInRight, ZoomIn } from 'react-native-reanimated';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, db } from './firebaseConfig';
 
 const { width } = Dimensions.get('window');
@@ -777,6 +777,7 @@ const LessonForm = ({
   title: string;
   uploadProgress?: number;
 }) => {
+  const insets = useSafeAreaInsets();
   const [form, setForm] = useState<LessonFormData>({
     title: initial.title ?? '',
     description: initial.description ?? '',
@@ -887,7 +888,7 @@ const LessonForm = ({
 
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: P.bg }}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: P.bg }}>
       <View style={[mf.hdr, { borderBottomColor: P.border }]}>
         <TouchableOpacity onPress={onCancel} style={mf.backBtn} disabled={saving}>
           <Feather name="x" size={20} color={P.sub} />
@@ -905,7 +906,7 @@ const LessonForm = ({
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
+        contentContainerStyle={{ padding: 20, paddingBottom: 112 }}
         keyboardShouldPersistTaps="handled"
       >
         {saving && (
@@ -1220,6 +1221,7 @@ const CourseForm = ({
   saving: boolean;
   title: string;
 }) => {
+  const insets = useSafeAreaInsets();
   const [form, setForm] = useState<CourseFormData>({
     title: initial.title ?? '',
     description: initial.description ?? '',
@@ -1229,7 +1231,7 @@ const CourseForm = ({
   const f = (k: keyof CourseFormData) => (v: string) => setForm(p => ({ ...p, [k]: v }));
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: P.bg }}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: P.bg }}>
       <View style={[mf.hdr, { borderBottomColor: P.border }]}>
         <TouchableOpacity onPress={onCancel} style={mf.backBtn} disabled={saving}>
           <Feather name="x" size={20} color={P.sub} />
@@ -1246,7 +1248,7 @@ const CourseForm = ({
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 80 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 92 }}>
         <View style={mf.section}>
           <Text style={mf.sectionLbl}>KURS MA'LUMOTLARI</Text>
 
@@ -1405,6 +1407,7 @@ const NAV: { key: Screen; icon: string; label: string }[] = [
 
 export default function AdminPanel() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [allUsers, setAllUsers] = useState<AppUser[]>([]);
@@ -1986,7 +1989,7 @@ export default function AdminPanel() {
   // ─── Screens ──────────────────────────────────────────────────────────────
 
   const renderDashboard = () => (
-    <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+    <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 + Math.max(insets.bottom, 12) }}>
       <Animated.View entering={FadeInUp.duration(400)}>
         <Text style={a.screenTitle}>Dashboard</Text>
         <Text style={a.screenSub}>Tizim holati va statistikasi</Text>
@@ -2182,7 +2185,7 @@ export default function AdminPanel() {
       <FlatList
         data={filteredCourses}
         keyExtractor={item => item.id}
-        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 100 + Math.max(insets.bottom, 12) }}
         ListEmptyComponent={
           <View style={a.emptyBox}>
             <Feather name="folder" size={44} color={P.muted} />
@@ -2315,7 +2318,7 @@ export default function AdminPanel() {
           <FlatList
             data={lessons}
             keyExtractor={item => item.id}
-            contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: 100 + Math.max(insets.bottom, 12) }}
             ListEmptyComponent={
               <View style={a.emptyBox}>
                 <MaterialCommunityIcons name="book-open-page-variant-outline" size={44} color={P.muted} />
@@ -2445,7 +2448,7 @@ export default function AdminPanel() {
       <FlatList
         data={filteredUsers}
         keyExtractor={item => item.id}
-        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 100 + Math.max(insets.bottom, 12) }}
         ListEmptyComponent={
           <View style={a.emptyBox}>
             <Text style={a.emptyTxt}>Foydalanuvchi topilmadi</Text>
@@ -2482,7 +2485,7 @@ export default function AdminPanel() {
   );
 
   const renderMonitoring = () => (
-    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 + Math.max(insets.bottom, 12) }}>
       <View style={a.monitorSummary}>
         {[
           { label: "O'rtacha ball", value: `${analytics.avgScore}%`, color: P.indigo },
@@ -2596,14 +2599,14 @@ export default function AdminPanel() {
   };
 
   const renderSettings = () => (
-    <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+    <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 + Math.max(insets.bottom, 12) }}>
       <Text style={a.screenTitle}>Sozlamalar</Text>
       <Text style={a.screenSub}>Tizim, hisob va sertifikat sozlamalari</Text>
 
       <Text style={[a.sectionLbl, { marginTop: 8 }]}>HISOB</Text>
 
       <View style={a.settingsCard}>
-        <TouchableOpacity style={a.settingsRow} onPress={() => Linking.openURL('tel:+998973034610')}>
+        <TouchableOpacity style={a.settingsRow} onPress={() => Linking.openURL('tel:+998884607747')}>
           <View style={[a.settingsIcon, { backgroundColor: P.emerald + '18' }]}>
             <Feather name="phone-call" size={16} color={P.emerald} />
           </View>
@@ -2783,8 +2786,8 @@ export default function AdminPanel() {
   // ─── Root Render ──────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={a.root}>
-      <StatusBar barStyle="light-content" backgroundColor={P.bg} />
+    <SafeAreaView edges={['top', 'left', 'right']} style={a.root}>
+      <StatusBar barStyle="light-content" backgroundColor={P.bg} translucent={false} />
 
       <View style={a.topBar}>
         {selectedCourse && screen === 'courses' ? (
@@ -2821,7 +2824,7 @@ export default function AdminPanel() {
         {screen === 'settings' && renderSettings()}
       </View>
 
-      <View style={a.bottomNav}>
+      <View style={[a.bottomNav, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         {NAV.map(item => {
           const active = screen === item.key;
 
@@ -3417,7 +3420,6 @@ const a = StyleSheet.create({
     backgroundColor: P.surface,
     borderTopWidth: 1,
     borderTopColor: P.border,
-    paddingBottom: 24,
     paddingTop: 10,
   },
   navItem: {
