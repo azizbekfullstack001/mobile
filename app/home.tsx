@@ -1,5 +1,6 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as IntentLauncher from 'expo-intent-launcher';
 import * as Linking from 'expo-linking';
 import * as Print from 'expo-print';
 import { useRouter } from 'expo-router';
@@ -148,6 +149,22 @@ const escapeHtml = (value: any) =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+
+
+const getMimeTypeFromFileName = (fileName?: string, fallback?: string) => {
+  const ext = (fileName || '').split('.').pop()?.toLowerCase();
+
+  if (ext === 'pdf') return 'application/pdf';
+  if (ext === 'doc') return 'application/msword';
+  if (ext === 'docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  if (ext === 'ppt') return 'application/vnd.ms-powerpoint';
+  if (ext === 'pptx') return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+  if (ext === 'txt') return 'text/plain';
+  if (ext === 'xlsx') return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  if (ext === 'xls') return 'application/vnd.ms-excel';
+
+  return fallback || 'application/octet-stream';
+};
 
 const normalizeRole = (role?: string) => {
   if (role === 'super-admin' || role === 'admin' || role === 'student' || role === 'user') {
@@ -1250,26 +1267,54 @@ export default function Home() {
       if (fileBase64 && lesson.theoryFileName) {
         const safeName = lesson.theoryFileName.replace(/[^a-zA-Z0-9._-]/g, '_');
         const fileUri = `${FileSystem.cacheDirectory}${Date.now()}_${safeName}`;
+        const mimeType = getMimeTypeFromFileName(lesson.theoryFileName, lesson.theoryFileMimeType);
 
         await FileSystem.writeAsStringAsync(fileUri, fileBase64, {
           encoding: BASE64_ENCODING as any,
         });
 
+        const info = await FileSystem.getInfoAsync(fileUri);
+        if (!info.exists) {
+          throw new Error('Fayl cache xotiraga yozilmadi.');
+        }
+
+        if (Platform.OS === 'android') {
+          try {
+            const contentUri = await FileSystem.getContentUriAsync(fileUri);
+
+            await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+              data: contentUri,
+              flags: 1,
+              type: mimeType,
+            });
+
+            return;
+          } catch (intentError) {
+            console.log('Android Intent orqali ochishda xato:', intentError);
+
+            if (await Sharing.isAvailableAsync()) {
+              await Sharing.shareAsync(fileUri, {
+                mimeType,
+                dialogTitle: lesson.theoryFileName,
+                UTI: 'public.item',
+              });
+              return;
+            }
+
+            throw intentError;
+          }
+        }
+
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(fileUri, {
-            mimeType: lesson.theoryFileMimeType || 'application/octet-stream',
+            mimeType,
             dialogTitle: lesson.theoryFileName,
+            UTI: 'public.item',
           });
           return;
         }
 
-        const canOpen = await Linking.canOpenURL(fileUri);
-        if (canOpen) {
-          await Linking.openURL(fileUri);
-          return;
-        }
-
-        Alert.alert('Tayyor', `Fayl saqlandi: ${fileUri}`);
+        await Linking.openURL(fileUri);
         return;
       }
 
@@ -1279,18 +1324,38 @@ export default function Home() {
       }
 
       if (lesson.theoryFileUri) {
+        if (Platform.OS === 'android') {
+          try {
+            const contentUri = await FileSystem.getContentUriAsync(lesson.theoryFileUri);
+            await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+              data: contentUri,
+              flags: 1,
+              type: getMimeTypeFromFileName(lesson.theoryFileName, lesson.theoryFileMimeType),
+            });
+            return;
+          } catch {}
+        }
+
         if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(lesson.theoryFileUri);
+          await Sharing.shareAsync(lesson.theoryFileUri, {
+            mimeType: getMimeTypeFromFileName(lesson.theoryFileName, lesson.theoryFileMimeType),
+            dialogTitle: lesson.theoryFileName || 'Nazariy fayl',
+          });
         } else {
-          Alert.alert('Xato', 'Qurilmangizda ulashish funksiyasi mavjud emas.');
+          Alert.alert('Xato', 'Qurilmangizda fayl ochish/ulashish funksiyasi mavjud emas.');
         }
         return;
       }
 
       Alert.alert('Xato', 'Nazariy fayl topilmadi.');
-    } catch (e) {
+    } catch (e: any) {
       console.error('Fayl ochishda xato:', e);
-      Alert.alert('Xato', 'Faylni ochib bo‘lmadi. Qaytadan urinib ko‘ring.');
+      Alert.alert(
+        'Faylni ochib bo‘lmadi',
+        e?.message
+          ? `${e.message}\n\nAgar fayl PDF/Word/PPTX bo‘lsa, telefonda mos ilova o‘rnatilganini tekshiring.`
+          : 'Qaytadan urinib ko‘ring yoki telefonda PDF/Word/PPTX ochadigan ilova borligini tekshiring.',
+      );
     }
   };
 
@@ -1697,7 +1762,7 @@ export default function Home() {
         {/* Admin bilan bog'lanish */}
         <TouchableOpacity
           style={s.actionRow}
-          onPress={() => Linking.openURL('tel:+998884607747')}
+          onPress={() => Linking.openURL('tel:+998901234567')}
         >
           <View style={[s.actionIcon, { backgroundColor: T.grnBg }]}>
             <Feather name="phone-call" size={15} color={T.grn} />
